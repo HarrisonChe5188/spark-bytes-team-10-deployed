@@ -12,8 +12,8 @@ export async function GET(request: Request) {
     next = '/'
   }
 
-  // Use environment variable for site URL, fallback to request origin for local dev
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin
+  // Use environment variable for site URL, with Vercel URL as fallback
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : new URL(request.url).origin)
 
   if (code) {
     const supabase = await createClient()
