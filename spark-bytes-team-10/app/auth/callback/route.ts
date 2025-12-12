@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
+  const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
   // if "next" is in param, use it as the redirect URL
   let next = searchParams.get('next') ?? '/'
@@ -11,6 +11,9 @@ export async function GET(request: Request) {
     // if "next" is not a relative URL, use the default
     next = '/'
   }
+
+  // Use environment variable for site URL, fallback to request origin for local dev
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin
 
   if (code) {
     const supabase = await createClient()
@@ -20,21 +23,12 @@ export async function GET(request: Request) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user?.email && !user.email.toLowerCase().endsWith('@bu.edu')) {
         await supabase.auth.signOut()
-        return NextResponse.redirect(`${origin}/auth/error?error=Only Boston University (@bu.edu) email addresses are allowed`)
+        return NextResponse.redirect(`${baseUrl}/auth/error?error=Only Boston University (@bu.edu) email addresses are allowed`)
       }
-      const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
-      const isLocalEnv = process.env.NODE_ENV === 'development'
-      if (isLocalEnv) {
-        // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
-        return NextResponse.redirect(`${origin}${next}`)
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`)
-      } else {
-        return NextResponse.redirect(`${origin}${next}`)
-      }
+      return NextResponse.redirect(`${baseUrl}${next}`)
     }
   }
 
   // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+  return NextResponse.redirect(`${baseUrl}/auth/auth-code-error`)
 }
