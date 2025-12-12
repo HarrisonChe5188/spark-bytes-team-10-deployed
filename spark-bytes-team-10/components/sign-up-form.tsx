@@ -26,10 +26,11 @@ export function SignUpForm({
     setError(null);
 
     try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/home`,
+          redirectTo: `${siteUrl}/auth/callback?next=/home`,
           queryParams: {
             prompt: 'select_account',
             hd: 'bu.edu', // Restrict to bu.edu domain
